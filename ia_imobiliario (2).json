@@ -1,0 +1,221 @@
+{
+  "name": "ia imobiliario",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "edited_message",
+          "channel_post",
+          "edited_channel_post",
+          "inline_query",
+          "poll",
+          "pre_checkout_query",
+          "shipping_query",
+          "callback_query",
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "id": "e7c48239-7a2d-4b78-9e68-b6a2051238b3",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        260
+      ],
+      "webhookId": "9a006291-3906-4ce0-ab44-0f5231123b69",
+      "credentials": {
+        "telegramApi": {
+          "id": "HM5DZpGNHvXvH151",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "2004603935",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "8047c0d7-da6d-4c1a-9b99-c1fc6827395e",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        260
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "HM5DZpGNHvXvH151",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "id": "56a78471-3af9-4270-9481-a498c127baa2",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "procurar imovel desejado ",
+        "url": "https://www.olx.com.br/imoveis"
+      },
+      "id": "8c4a7fa2-b521-4977-aff2-013ac6037c81",
+      "name": "HTTP Request",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        140,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "9e9c56db-8f61-4246-a9ba-fcde18fbc75c",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        580
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "VG3thaYMgsGCBNF6",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=Data e hora atual: {{$now.setLocale(\"pt-BR\").format(\"DDDD - 'Hora: 'HH 'Minutos: 'mm\") }}\nNível 1: Coletar Informações Básicas\n/iniciar\nDescrição: Dá início à coleta de informações do lead.\nExemplo de Resposta:\n\n\"Olá! Sou seu assistente imobiliário. Para começar, preciso de algumas informações:\n\nQual o seu nome?\nQual o seu e-mail?\nQue tipo de imóvel você procura (casa, apartamento, terreno, etc.)?\"\n/dadoslead\nDescrição: Exibe os dados coletados do lead.\nExemplo de Resposta:\n\n\"Aqui estão as informações que coletei até agora:\nNome: [nome]\nE-mail: [e-mail]\nTipo de Imóvel: [tipo]\"\n\n/editarlead\nDescrição: Permite editar informações do lead.\nExemplo de Resposta:\n\n\"Qual dado você gostaria de editar? (Responda com: 'Nome', 'E-mail' ou 'Tipo de Imóvel')\"\n\nNível 2: Qualificar o Lead\n/qualificar\nDescrição: Faz perguntas para avaliar o interesse do lead.\nExemplo de Resposta:\n\n\"Gostaria de entender melhor o que você procura.\n\nEm que região você quer o imóvel?\nQual a faixa de preço desejada?\nQuando pretende fechar negócio (urgente, próximo mês, sem pressa)?\"\n/interesselead\nDescrição: Mostra o nível de interesse baseado nas respostas do lead.\nExemplo de Resposta:\n\n\"Nível de interesse:\n\nRegião: [região]\nFaixa de Preço: [faixa]\nUrgência: [urgência]\"\n/filtrarleads\nDescrição: Lista leads mais promissores para contato.\nExemplo de Resposta:\n\n\"Aqui estão os leads mais promissores:\n\nNome: [nome] - Interesse: Alto\nNome: [nome] - Interesse: Médio\nNome: [nome] - Interesse: Alto\"\nNível 3: Sugerir Imóveis\n/sugeririmovel\nDescrição: Sugere imóveis personalizados com base no perfil do lead.\nExemplo de Resposta:\n\n\"Encontrei algumas opções que podem te interessar:\n\nApartamento em [bairro] - 3 quartos, R$ [valor]\nCasa em [bairro] - 2 quartos, R$ [valor]\nTerreno em [cidade] - 300m², R$ [valor]\nDeseja saber mais sobre algum deles?\"\n/maisdetalhes [id_imovel]\nDescrição: Fornece mais detalhes sobre um imóvel sugerido.\nExemplo de Resposta:\n\n\"Detalhes do imóvel:\n\nLocalização: [endereço]\nDescrição: [detalhes]\nValor: R$ [valor]\nContato para visita: [telefone]\"\n/buscarimovel\nDescrição: Permite ao lead procurar imóveis por filtros específicos.\nExemplo de Resposta:\n\n\"Me diga mais sobre o imóvel que procura.\n\nTipo de Imóvel (casa, apartamento, terreno)\nRegião ou cidade\nFaixa de preço máxima\"\nComandos Gerais\n/ajuda\nDescrição: Lista os comandos disponíveis para o lead.\nExemplo de Resposta:\n\n\"Comandos disponíveis:\n\n/iniciar: Começar o atendimento\n/qualificar: Responder perguntas de interesse\n/sugeririmovel: Ver imóveis sugeridos\n/buscarimovel: Procurar imóveis por filtros\n/ajuda: Ver esta lista novamente\"\n/finalizar\nDescrição: Encerra a interação e agradece o contato.\nExemplo de Resposta:\n\n\"Obrigado por usar nosso assistente imobiliário! Se precisar de algo, é só chamar. 😊\""
+        }
+      },
+      "id": "6a73aa78-be83-444d-a83a-e7da539c5f6f",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        600,
+        260
+      ]
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 169190899,
+          "message": {
+            "message_id": 304,
+            "from": {
+              "id": 2004603935,
+              "is_bot": false,
+              "first_name": "Alyson",
+              "last_name": "Marquez",
+              "username": "alysonmarquez",
+              "language_code": "pt-br"
+            },
+            "chat": {
+              "id": 2004603935,
+              "first_name": "Alyson",
+              "last_name": "Marquez",
+              "username": "alysonmarquez",
+              "type": "private"
+            },
+            "date": 1734287112,
+            "text": "quero uma casa em são paulo zona leste"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "16b65e4d-ff28-4716-a8e6-82ff801cd01d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc7bb5e3e76a67ab21cac0a4a95988cab2ca4bbbc5ce3a8be98538ae5bd62cc1"
+  },
+  "id": "EdpdjBYw1BsoSH2d",
+  "tags": []
+}
